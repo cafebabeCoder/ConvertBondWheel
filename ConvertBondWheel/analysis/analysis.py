@@ -3,6 +3,7 @@ from ConvertBondWheel.items import ConvertbondwheelItem
 import json
 import datetime
 
+
 class Analysis:
     def __init__(self, jstr, output):
         self.dict = {
@@ -28,7 +29,8 @@ class Analysis:
             'ytm_rt_tax': '到期税后收益',
             'volume': '成交额(万元)',
         }
-        self.columns = ['value_score', 'bond_id', 'bond_nm', 'price', 'increase_rt', 'stock_nm', 'sprice', 'sincrease_rt',
+        self.columns = ['value_score', 'bond_id', 'bond_nm', 'price', 'increase_rt', 'stock_nm', 'sprice',
+                        'sincrease_rt',
                         'pb', 'convert_price', 'convert_value', 'premium_rt', 'rating_cd', 'put_convert_price',
                         'force_redeem_price', 'convert_amt_ratio', 'short_maturity_dt', 'year_left', 'ytm_rt',
                         'ytm_rt_tax', 'volume']
@@ -63,6 +65,8 @@ class Analysis:
             citem['ytm_rt'] = cellItem['ytm_rt']
             citem['ytm_rt_tax'] = cellItem['ytm_rt_tax']
             citem['volume'] = cellItem['volume']
+            if 'EB' in citem['bond_nm']:
+                continue
             citems.append(citem)
         df = pd.DataFrame(citems)
         df_sort = df.sort_values('value_score')
@@ -70,6 +74,7 @@ class Analysis:
 
     def get_score(self, price, premium_rt):
         return float(price) + float(premium_rt.split('%')[0])
+
 
 if __name__ == "__main__":
     with open("../../data/data", 'rb') as load_f:

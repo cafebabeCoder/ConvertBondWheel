@@ -26,6 +26,6 @@ class JisiluSpider(scrapy.Spider):
     def parse(self, response):
         result = json.loads(response.body)
         date = datetime.datetime.now().strftime('%Y%m%d')
-        output = "data/" + date + ".csv"
+        output = "../../data/" + date + ".csv"
         an = Analysis(result, output)
         an.process()
