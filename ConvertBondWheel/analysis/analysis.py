@@ -3,7 +3,6 @@ from ConvertBondWheel.items import ConvertbondwheelItem
 import json
 import datetime
 
-
 class Analysis:
     def __init__(self, jstr, output):
         self.dict = {
@@ -65,7 +64,7 @@ class Analysis:
             citem['ytm_rt'] = cellItem['ytm_rt']
             citem['ytm_rt_tax'] = cellItem['ytm_rt_tax']
             citem['volume'] = cellItem['volume']
-            if 'EB' in citem['bond_nm']:
+            if 'EB' in citem['bond_nm'] or citem['volume'] == '0.00':
                 continue
             citems.append(citem)
         df = pd.DataFrame(citems)
