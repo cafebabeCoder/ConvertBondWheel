@@ -2,6 +2,14 @@ import pandas as pd
 from ConvertBondWheel.items import ConvertbondwheelItem
 import json
 import datetime
+import pandas
+import baostock as bs
+import pandas as pd
+import tushare as ts
+from datetime import timedelta
+
+VOL_DATE_AGO = 90
+VOL_LOW = 50
 
 class Analysis:
     def __init__(self, jstr, output):
@@ -27,12 +35,13 @@ class Analysis:
             'ytm_rt': '到期税前收益',
             'ytm_rt_tax': '到期税后收益',
             'volume': '成交额(万元)',
+            'vol_mean': str(VOL_DATE_AGO) + '天平均成交额(万元)',
         }
         self.columns = ['value_score', 'bond_id', 'bond_nm', 'price', 'increase_rt', 'stock_nm', 'sprice',
                         'sincrease_rt',
                         'pb', 'convert_price', 'convert_value', 'premium_rt', 'rating_cd', 'put_convert_price',
                         'force_redeem_price', 'convert_amt_ratio', 'short_maturity_dt', 'year_left', 'ytm_rt',
-                        'ytm_rt_tax', 'volume']
+                        'ytm_rt_tax', 'volume', 'vol_mean']
         self.header = [self.dict[x] for x in self.columns]
         self.jstr = jstr
         self.output = output
@@ -68,12 +77,22 @@ class Analysis:
                 continue
             citems.append(citem)
         df = pd.DataFrame(citems)
+
+        #获取历史成交量
+        ts.set_token('047e2bcae2ea6c2f6f225eeb62087d27e1981988e758c82ba1997971')
+        volDate = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
+        con = ts.get_apis()
+        df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, con, volDate))
+
         df_sort = df.sort_values('value_score')
         df_sort.to_csv(self.output, index=None, encoding='gbk', columns=self.columns, header=self.header)
 
     def get_score(self, price, premium_rt):
         return float(price) + float(premium_rt.split('%')[0])
 
+    def getVolMean(self, code, con, volDate):
+        dfs = ts.bar(code, conn=con, start_date=volDate)
+        return dfs.loc[:, 'vol'].mean()
 
 if __name__ == "__main__":
     with open("../../data/data", 'rb') as load_f:
