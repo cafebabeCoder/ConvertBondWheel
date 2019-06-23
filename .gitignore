@@ -1,3 +1,6 @@
 .DS_Store
 /.idea
 *.iml
+ConvertBondWheel/__pycache__/
+ConvertBondWheel/analysis/__pycache__/
+ConvertBondWheel/spiders/__pycache__/
