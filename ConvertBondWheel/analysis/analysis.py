@@ -3,7 +3,6 @@ from ConvertBondWheel.items import ConvertbondwheelItem
 import json
 import datetime
 import pandas
-import baostock as bs
 import pandas as pd
 import tushare as ts
 from datetime import timedelta
@@ -82,7 +81,7 @@ class Analysis:
         ts.set_token('047e2bcae2ea6c2f6f225eeb62087d27e1981988e758c82ba1997971')
         volDate = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
         con = ts.get_apis()
-        df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, con, volDate))
+        df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, con, volDate)).round(2)
 
         df_sort = df.sort_values('value_score')
         df_sort.to_csv(self.output, index=None, encoding='gbk', columns=self.columns, header=self.header)
