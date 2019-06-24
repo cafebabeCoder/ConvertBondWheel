@@ -82,6 +82,7 @@ class Analysis:
         volDate = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
         con = ts.get_apis()
         df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, con, volDate)).round(2)
+        df = df.drop(df[df.vol_mean < 500].index)
 
         df_sort = df.sort_values('value_score')
         df_sort.to_csv(self.output, index=None, encoding='gbk', columns=self.columns, header=self.header)
