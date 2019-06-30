@@ -14,6 +14,14 @@ BOT_NAME = 'ConvertBondWheel'
 SPIDER_MODULES = ['ConvertBondWheel.spiders']
 NEWSPIDER_MODULE = 'ConvertBondWheel.spiders'
 
+# 多少天的平均成交量
+VOL_DATE_AGO = 90
+# 筛除掉平均成交额低于 500 万的转债
+MIN_VOL = 500
+# 输出目录， 格式 目录+时间.csv
+OUTPUT = "../../data/"
+#tushare token
+TOKEN = '047e2bcae2ea6c2f6f225eeb62087d27e1981988e758c82ba1997971'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ConvertBondWheel (+http://www.yourdomain.com)'
@@ -64,9 +72,9 @@ LOG_LEVEL = "INFO"
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'ConvertBondWheel.pipelines.ConvertbondwheelPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'ConvertBondWheel.pipelines.ConvertbondwheelPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
