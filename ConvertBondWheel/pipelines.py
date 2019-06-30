@@ -79,6 +79,6 @@ class ConvertbondwheelPipeline(object):
         df_sort = df.sort_values('value_score')
         df_sort.to_csv(self.output, index=None, encoding='gbk', columns=self.columns, header=self.header)
 
-        self.conn.close()
-        ts.close_apis()
+        # self.conn.close()
+        # ts.close_apis()
 
