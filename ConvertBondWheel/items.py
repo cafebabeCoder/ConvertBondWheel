@@ -33,5 +33,6 @@ class ConvertbondwheelItem(scrapy.Item):
     ytm_rt_tax = scrapy.Field()
     volume = scrapy.Field()
     value_score = scrapy.Field()
+    convert_dt = scrapy.Field()
 
     pass

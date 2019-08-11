@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import scrapy
 import json
+import requests
+import scrapy
+
 from ConvertBondWheel.items import ConvertbondwheelItem
-import pandas as pd
-from ConvertBondWheel.analysis.analysis import Analysis
-import datetime
+
 
 class JisiluSpider(scrapy.Spider):
     name = 'jisilu'
@@ -24,7 +24,52 @@ class JisiluSpider(scrapy.Spider):
 
     def parse(self, response):
         result = json.loads(response.body)
-        date = datetime.datetime.now().strftime('%Y%m%d')
-        output = "../../data/" + date + ".csv"
-        an = Analysis(result, output)
-        an.process()
+        rows = result['rows']
+        citems = {}
+        sess = requests.Session()
+        for row in rows:
+            citem = ConvertbondwheelItem()
+            cellItem = row['cell']
+            citem['price'] = cellItem['price']
+            citem['premium_rt'] = cellItem['premium_rt']
+            citem['value_score'] = self.get_score(citem['price'], citem['premium_rt'])
+            citem['bond_id'] = cellItem['bond_id']
+            # 加入转股日期
+            conver_dt_link = "https://www.jisilu.cn/data/cbnew/detail_pic/?display=premium_rt&bond_id=" + citem['bond_id']
+            # yield scrapy.Request(conver_dt_link, callback=self.parse_convert_dt, headers=self.HEADER, meta={'boundid' : citem['bond_id'], 'item' : citem})
+            html = sess.get(conver_dt_link, headers=self.HEADER).text
+
+            citem['convert_dt'] = json.loads(html)['convert_dt']
+            citem['bond_nm'] = cellItem['bond_nm']
+            citem['increase_rt'] = cellItem['increase_rt']
+            citem['sprice'] = cellItem['sprice']
+            citem['stock_nm'] = cellItem['stock_nm']
+            citem['sincrease_rt'] = cellItem['sincrease_rt']
+            citem['pb'] = cellItem['pb']
+            citem['convert_price'] = cellItem['convert_price']
+            citem['convert_value'] = cellItem['convert_value']
+            citem['rating_cd'] = cellItem['rating_cd']
+            citem['put_convert_price'] = cellItem['put_convert_price']
+            citem['force_redeem_price'] = cellItem['force_redeem_price']
+            citem['convert_amt_ratio'] = cellItem['convert_amt_ratio']
+            citem['short_maturity_dt'] = cellItem['short_maturity_dt']
+            citem['year_left'] = cellItem['year_left']
+            citem['ytm_rt'] = cellItem['ytm_rt']
+            citem['ytm_rt_tax'] = cellItem['ytm_rt_tax']
+            citem['volume'] = cellItem['volume']
+            if 'EB' in citem['bond_nm'] or citem['volume'] == '0.00':
+                continue
+            citems[citem['bond_id']] = citem
+        yield citems
+
+
+    def parse_convert_dt(self, response):
+        # boundid = response.meta['boundid']
+        # item = response.meta['item']
+        result = json.loads(response.body)
+        convert_dt = result['convert_dt']
+        # item['convert_dt'] = convert_dt
+        return convert_dt
+
+    def get_score(self, price, premium_rt):
+        return float(price) + float(premium_rt.split('%')[0])
