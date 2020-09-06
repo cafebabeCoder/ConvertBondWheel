@@ -1,6 +1,7 @@
 .DS_Store
 /.idea
 *.iml
+**/.ipynb_checkpoints/
 ConvertBondWheel/__pycache__/
-ConvertBondWheel/analysis/__pycache__/
+policy/analysis/__pycache__/
 ConvertBondWheel/spiders/__pycache__/

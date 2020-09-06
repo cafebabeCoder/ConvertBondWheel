@@ -49,17 +49,21 @@ class ConvertbondwheelPipeline(object):
         if not os.path.exists(OUTPUT):
             os.makedirs(OUTPUT)
         self.output = OUTPUT + date + ".csv"
+        print("save to path: ", self.output)
         ts.set_token(TOKEN)
-        self.conn = ts.get_apis()
+        self.pro = ts.pro_api()
+        # self.conn = ts.get_apis()
 
     def getVolMean(self, code, start_date):
-        dfs = ts.bar(code, conn=self.conn, start_date=start_date)
-        # print(dfs)
+        dfs_sh = self.pro.cb_daily(ts_code=code+".SH", start_date=start_date)
+        dfs_sz = self.pro.cb_daily(ts_code=code+".SZ", start_date=start_date)
+        dfs = pd.concat([dfs_sh, dfs_sz], axis=0)
         try:
             vol = dfs.loc[:, 'vol'].mean()
         except:
             print("error:" + code)
             vol = 0
+        print(vol)
         return vol
 
     def process_item(self, maps, spider):
@@ -74,11 +78,11 @@ class ConvertbondwheelPipeline(object):
         start_date = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
 
         df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, start_date)).round(2)
+        # df['vol_mean'] = 0
         df = df.drop(df[df.vol_mean < MIN_VOL].index)
 
         df_sort = df.sort_values('value_score')
-        df_sort.to_csv(self.output, index=None, encoding='gbk', columns=self.columns, header=self.header)
+        df_sort.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
 
-        # self.conn.close()
-        # ts.close_apis()
+        # ts.close_apis(self.conn)
 
