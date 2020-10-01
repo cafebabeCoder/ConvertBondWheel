@@ -19,7 +19,8 @@ VOL_DATE_AGO = 90
 # 筛除掉平均成交额低于 500 万的转债
 MIN_VOL = 500
 # 输出目录， 格式 目录+时间.csv
-OUTPUT = "../../data/"
+OUTPUT = "/root/workSpace/investProject/ConvertBondWheel/data/"
+FILENAME = 'jisiluConvertBound'
 #tushare token
 TOKEN = '047e2bcae2ea6c2f6f225eeb62087d27e1981988e758c82ba1997971'
 

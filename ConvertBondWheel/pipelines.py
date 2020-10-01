@@ -8,7 +8,7 @@ import datetime
 import os
 import pandas as pd
 import tushare as ts
-from ConvertBondWheel.settings import OUTPUT, VOL_DATE_AGO, MIN_VOL, TOKEN
+from ConvertBondWheel.settings import OUTPUT,FILENAME, VOL_DATE_AGO, MIN_VOL, TOKEN
 
 
 class ConvertbondwheelPipeline(object):
@@ -48,7 +48,7 @@ class ConvertbondwheelPipeline(object):
         date = datetime.datetime.now().strftime('%Y%m%d')
         if not os.path.exists(OUTPUT):
             os.makedirs(OUTPUT)
-        self.output = OUTPUT + date + ".csv"
+        self.output = OUTPUT + FILENAME + ".csv"
         print("save to path: ", self.output)
         ts.set_token(TOKEN)
         self.pro = ts.pro_api()
@@ -77,9 +77,9 @@ class ConvertbondwheelPipeline(object):
 
         start_date = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
 
-        df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, start_date)).round(2)
-        # df['vol_mean'] = 0
-        df = df.drop(df[df.vol_mean < MIN_VOL].index)
+        # df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, start_date)).round(2)
+        df['vol_mean'] = 0
+        # df = df.drop(df[df.vol_mean < MIN_VOL].index)
 
         df_sort = df.sort_values('value_score')
         df_sort.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
