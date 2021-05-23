@@ -22,7 +22,13 @@ sh /root/workSpace/investProject/ConvertBondWheel/policy/double_low/run_alarm.sh
 
 不能运行先检查是否有文件夹， 是否有权限
 
-# scrapy only
+# scrapy converboundwheel only
 cd ConvertBondWheel\ConvertBondWheel\spiders
 
 scrapy crawl jisilu
+
+# scrapy xueqiu
+(用jojo账号登陆，并获取持仓) 
+cd ConvertBondWheel\ConvertBondWheel\spiders
+
+scrapy runspider spiders\xueqiu.py (与上面jisilu可以互换)
