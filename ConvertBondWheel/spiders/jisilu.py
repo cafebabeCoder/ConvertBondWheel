@@ -12,6 +12,7 @@ class JisiluSpider(scrapy.Spider):
     name = 'jisilu'
     allowed_domains = ['jisilu.cn']
     start_urls = ['https://www.jisilu.cn/data/cbnew/cb_list/?___jsl=LST___t']
+    custom_settings = {'ITEM_PIPELINES':{'ConvertBondWheel.pipelines.ConvertbondwheelPipeline': 300}}
 
     HEADER = {
         'Host': 'www.jisilu.cn',

@@ -4,12 +4,11 @@ export PATH=$PATH:/root/anaconda3/bin:/root/anaconda3/envs/scrapy_ts/bin
 cur_date=$(date '+%Y-%m-%d %H:%M:%S')
 echo "---------$cur_date------"
 
-echo "---------scrapy---------"
-
 # 爬虫爬集思录
 echo "---------scrapy---------"
 cd /root/workSpace/investProject/ConvertBondWheel/ConvertBondWheel/spiders
-scrapy crawl jisilu
+scrapy crawl jisilu  
+scrapy crawl xueqiu 
 
 # 运行监控程序
 echo "--------alarm-----------"

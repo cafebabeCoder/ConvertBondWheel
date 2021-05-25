@@ -36,3 +36,12 @@ class ConvertbondwheelItem(scrapy.Item):
     convert_dt = scrapy.Field()
 
     pass
+
+
+class XueqiuItem(scrapy.Item):
+    stock_id = scrapy.Field()
+    stock_name = scrapy.Field()
+    stock_symbol = scrapy.Field()
+    target_weight = scrapy.Field()
+
+    pass

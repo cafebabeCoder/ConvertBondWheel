@@ -23,6 +23,9 @@ OUTPUT = "/root/workSpace/investProject/ConvertBondWheel/data/"
 FILENAME = 'jisiluConvertBound'
 #tushare token
 TOKEN = '047e2bcae2ea6c2f6f225eeb62087d27e1981988e758c82ba1997971'
+# xueqiu
+XUEQIU_COOKIE = "/root/workSpace/investProject/ConvertBondWheel/ConvertBondWheel/mycookie"
+XUEQIU_FILENAME = "xueqiuRebalancing"
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'ConvertBondWheel (+http://www.yourdomain.com)'
@@ -75,6 +78,7 @@ COOKIES_ENABLED = True
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'ConvertBondWheel.pipelines.ConvertbondwheelPipeline': 300,
+   'ConvertBondWheel.pipelines.XueqiuPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

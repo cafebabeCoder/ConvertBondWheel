@@ -8,8 +8,35 @@ import datetime
 import os
 import pandas as pd
 import tushare as ts
-from ConvertBondWheel.settings import OUTPUT,FILENAME, VOL_DATE_AGO, MIN_VOL, TOKEN
+from ConvertBondWheel.settings import OUTPUT,FILENAME, VOL_DATE_AGO, MIN_VOL, TOKEN, XUEQIU_FILENAME 
 
+
+class XueqiuPipeline(object):
+    def __init__(self):
+        self.dict = {
+            'stock_id': '股票id',
+            'stock_name': '股票名称',
+            'stock_symbol': '股票代码',
+            'target_weight': '持仓'}
+        self.columns = ['stock_id', 'stock_name', 'stock_symbol', 'target_weight']
+        self.header = [self.dict[x] for x in self.columns]
+        if not os.path.exists(OUTPUT):
+            os.makedirs(OUTPUT)
+        self.output = OUTPUT + XUEQIU_FILENAME + ".csv"
+        print("[xueqiu] save to path: ", self.output)
+
+    def process_item(self, maps, spider):
+        if spider.name == 'xueqiu':
+            citems = []
+            print('-------')
+            print(maps)
+            if maps is not None:
+                for k in maps:
+                    citems.append(maps[k])
+                df = pd.DataFrame(citems)
+                print('_____', self.output) 
+                df.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
+     
 
 class ConvertbondwheelPipeline(object):
     # 写入file ,指定path
@@ -49,7 +76,7 @@ class ConvertbondwheelPipeline(object):
         if not os.path.exists(OUTPUT):
             os.makedirs(OUTPUT)
         self.output = OUTPUT + FILENAME + ".csv"
-        print("save to path: ", self.output)
+        print("[jisilu] save to path: ", self.output)
         ts.set_token(TOKEN)
         self.pro = ts.pro_api()
         # self.conn = ts.get_apis()
@@ -67,22 +94,23 @@ class ConvertbondwheelPipeline(object):
         return vol
 
     def process_item(self, maps, spider):
-        # print(maps)
-        citems = []
-        for k in maps:
-            citems.append(maps[k])
-        df = pd.DataFrame(citems)
-
-        #获取历史成交量
-
-        start_date = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
-
-        # df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, start_date)).round(2)
-        df['vol_mean'] = 0
-        # df = df.drop(df[df.vol_mean < MIN_VOL].index)
-
-        df_sort = df.sort_values('value_score')
-        df_sort.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
-
-        # ts.close_apis(self.conn)
-
+        if spider.name == 'jisilu':
+            # print(maps)
+            citems = []
+            for k in maps:
+                citems.append(maps[k])
+            df = pd.DataFrame(citems)
+    
+            #获取历史成交量
+    
+            start_date = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
+    
+            # df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, start_date)).round(2)
+            df['vol_mean'] = 0
+            # df = df.drop(df[df.vol_mean < MIN_VOL].index)
+    
+            df_sort = df.sort_values('value_score')
+            df_sort.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
+    
+            # ts.close_apis(self.conn)
+    

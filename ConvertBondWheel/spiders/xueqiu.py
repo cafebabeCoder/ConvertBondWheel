@@ -4,11 +4,13 @@ import requests
 import logging
 import scrapy
 from scrapy.http import Request, FormRequest, HtmlResponse
+from ConvertBondWheel.items import XueqiuItem 
 
 class MyCookie:
+    # 用账号登陆, 然后 取出network->cookie 的kv，记下来
     def __init__(self) :
         self.cookie = {}
-        with open("./mycookie", 'r', encoding='utf8') as f:
+        with open("/root/workSpace/investProject/ConvertBondWheel/ConvertBondWheel/mycookie", 'r', encoding='utf8') as f:
             lines = f.readlines()
             for line in lines:
                 key = line.split("=")[0].strip()
@@ -22,6 +24,7 @@ class XueqiuSpider(scrapy.Spider):
     name = 'xueqiu'
     allowed_domains = ['xueqiu.com']
     start_urls = ['https://xueqiu.com/cubes/rebalancing/show_origin.json?rb_id=94172067&cube_symbol=ZH2545675']
+    custom_settings = {'ITEM_PIPELINES':{'ConvertBondWheel.pipelines.XueqiuPipeline': 300}}
     mycookie = MyCookie().get_my_cookie()
 
     HEADER = {
@@ -49,4 +52,13 @@ class XueqiuSpider(scrapy.Spider):
     def parse(self, response):
         logging.info(response.body.decode('utf-8'))
         result = json.loads(response.body)
-        print(result)
+        citems = {}
+        rows = result['rebalancing']['rebalancing_histories']
+        for row in rows:
+            citem = XueqiuItem()
+            citem['stock_id'] = row['stock_id']
+            citem['stock_name'] = row['stock_name']
+            citem['stock_symbol'] = row['stock_symbol']
+            citem['target_weight'] = row['target_weight']
+            citems[citem['stock_id']] = citem
+        yield citems
