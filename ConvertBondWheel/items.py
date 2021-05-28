@@ -34,14 +34,18 @@ class ConvertbondwheelItem(scrapy.Item):
     volume = scrapy.Field()
     value_score = scrapy.Field()
     convert_dt = scrapy.Field()
+    volatility_rate = scrapy.Field()
+    dblow = scrapy.Field()
+    curr_iss_amt = scrapy.Field()
 
     pass
 
 
 class XueqiuItem(scrapy.Item):
-    stock_id = scrapy.Field()
+    shares = scrapy.Field()
     stock_name = scrapy.Field()
     stock_symbol = scrapy.Field()
-    target_weight = scrapy.Field()
+    float_rate = scrapy.Field()
+    accum_rate = scrapy.Field()
 
     pass

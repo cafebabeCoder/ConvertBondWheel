@@ -14,11 +14,13 @@ from ConvertBondWheel.settings import OUTPUT,FILENAME, VOL_DATE_AGO, MIN_VOL, TO
 class XueqiuPipeline(object):
     def __init__(self):
         self.dict = {
-            'stock_id': '股票id',
             'stock_name': '股票名称',
             'stock_symbol': '股票代码',
-            'target_weight': '持仓'}
-        self.columns = ['stock_id', 'stock_name', 'stock_symbol', 'target_weight']
+            'shares': '持仓',
+            # 'float_rate': '浮动盈亏',
+            # 'accum_rate': '累计盈亏',
+        }
+        self.columns = ['stock_name', 'stock_symbol', 'shares']
         self.header = [self.dict[x] for x in self.columns]
         if not os.path.exists(OUTPUT):
             os.makedirs(OUTPUT)
@@ -28,13 +30,10 @@ class XueqiuPipeline(object):
     def process_item(self, maps, spider):
         if spider.name == 'xueqiu':
             citems = []
-            print('-------')
-            print(maps)
             if maps is not None:
                 for k in maps:
                     citems.append(maps[k])
                 df = pd.DataFrame(citems)
-                print('_____', self.output) 
                 df.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
      
 
@@ -64,13 +63,16 @@ class ConvertbondwheelPipeline(object):
             'ytm_rt': '到期税前收益',
             'ytm_rt_tax': '到期税后收益',
             'volume': '成交额(万元)',
+            'volatility_rate': '波动率',
+            'dblow': '双低',
+            'curr_iss_amt': '剩余规模',
             'vol_mean': str(VOL_DATE_AGO) + '天平均成交额(万元)',
         }
         self.columns = ['value_score', 'bond_id', 'bond_nm', 'price', 'increase_rt', 'stock_nm', 'sprice',
                         'sincrease_rt',
                         'pb', 'convert_price', 'convert_value', 'premium_rt', 'rating_cd', 'put_convert_price',
                         'force_redeem_price', 'convert_amt_ratio', 'convert_dt', 'short_maturity_dt', 'year_left', 'ytm_rt',
-                        'ytm_rt_tax', 'volume', 'vol_mean']
+                        'ytm_rt_tax', 'volume', 'volatility_rate', 'dblow', 'curr_iss_amt', 'vol_mean']
         self.header = [self.dict[x] for x in self.columns]
         date = datetime.datetime.now().strftime('%Y%m%d')
         if not os.path.exists(OUTPUT):

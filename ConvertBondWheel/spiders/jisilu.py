@@ -90,6 +90,9 @@ class JisiluSpider(scrapy.Spider):
             citem['ytm_rt'] = cellItem['ytm_rt']
             citem['ytm_rt_tax'] = cellItem['ytm_rt_tax']
             citem['volume'] = cellItem['volume']
+            citem['volatility_rate'] = cellItem['volatility_rate']
+            citem['dblow'] = cellItem['dblow']
+            citem['curr_iss_amt'] = cellItem['curr_iss_amt']
             if 'EB' in citem['bond_nm'] or citem['volume'] == '0.00':
                 continue
             citems[citem['bond_id']] = citem
