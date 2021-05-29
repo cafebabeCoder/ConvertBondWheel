@@ -10,7 +10,6 @@ import scrapy
 
 class ConvertbondwheelItem(scrapy.Item):
     # define the fields for your item here like:
-    # name = scrapy.Field()
     bond_id = scrapy.Field()
     bond_nm = scrapy.Field()
     price = scrapy.Field()
@@ -37,15 +36,17 @@ class ConvertbondwheelItem(scrapy.Item):
     volatility_rate = scrapy.Field()
     dblow = scrapy.Field()
     curr_iss_amt = scrapy.Field()
+    redeem_flag = scrapy.Field()
+    turnover_rt = scrapy.Field()
 
     pass
 
 
 class XueqiuItem(scrapy.Item):
-    shares = scrapy.Field()
+    weight = scrapy.Field()
     stock_name = scrapy.Field()
     stock_symbol = scrapy.Field()
-    float_rate = scrapy.Field()
-    accum_rate = scrapy.Field()
+    # float_rate = scrapy.Field()
+    # accum_rate = scrapy.Field()
 
     pass
