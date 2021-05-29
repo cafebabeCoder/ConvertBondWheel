@@ -21,10 +21,6 @@ def timeStr():
     return s
 
 def toHTML(data, ins, outs, top_k):
-    display_row = ['得分', '代码', '转债名称', '现价', '涨跌幅', '正股名称', '正股价', 
-        '正股涨跌', '转股价', '转股价值', '溢价率', '回售触发价', '强赎触发价', '转债占比', 
-        '转股起始日', '到期时间', '剩余年限', '到期税后收益', '成交额(万元)']
-
     ori_html = data.to_html()
 
     #set table style
