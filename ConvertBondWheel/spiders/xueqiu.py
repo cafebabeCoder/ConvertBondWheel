@@ -5,6 +5,7 @@ import logging
 import scrapy
 from scrapy.http import Request, FormRequest, HtmlResponse
 from ConvertBondWheel.items import XueqiuItem 
+from ConvertBondWheel.fields_config import xueqiu_used_columns 
 
 class MyCookie:
     # 用账号登陆, 然后 取出network->cookie 的kv，记下来
@@ -82,10 +83,7 @@ class XueqiuSpider(scrapy.Spider):
         holdings = result['view_rebalancing']['holdings'] 
         for holding in holdings:
             citem = XueqiuItem()
-            citem['stock_symbol'] = holding['stock_symbol']
-            citem['shares'] = holding['weight']
-            citem['stock_name'] = holding['stock_name']
-            # citem['accum_rate'] = holding['accum_rate']
-            # citem['float_rate'] = holding['float_rate']
+            for colum in xueqiu_used_columns:
+                citem[colum] = holding[colum]
             citems[citem['stock_symbol']] = citem
         yield citems
