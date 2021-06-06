@@ -12,7 +12,7 @@ scrapy crawl xueqiu
 
 # 运行监控程序
 echo "--------alarm-----------"
-/root/anaconda3/envs/scrapy_ts/bin/python /root/workSpace/investProject/ConvertBondWheel/policy/double_low_enhance/alarm.py
+/root/anaconda3/envs/scrapy_ts/bin/python /root/workSpace/investProject/ConvertBondWheel/policy/double_low_enhance/alarm.py pulse
 
 # 替换当前文件为历史文件
 echo "-----replace file-------"

@@ -11,7 +11,7 @@ double_low_conf = {
     'redeem': ['Y'],  #  Y=强赎 不在强赎
     'min_year_left': 1,  # >剩余到期年限 (不要一年内到期的)
     'ytm_rt': -0.01,  # > 到期收益率
-    'pluse_out_step':10, # 脉冲轮出时， 轮出债比轮入新债双低值大多少
+    'pulse_out_step':10, # 脉冲轮出时， 轮出债比轮入新债双低值大多少
     'pulse_out_price_median':110, # 脉冲轮出时， 市场价格中位数
     'pulse_out_price':[120, 125], # 脉冲轮出时< 110 和>110 对应的轮出价格
     'pulse_out_dblow':[125, 130],  #同上， 双低值

@@ -12,53 +12,38 @@ from email.mime.image import MIMEImage
 from email.utils import parseaddr, formataddr
 import smtplib
 import time
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import pandas as pd
 from alarm import read_data, read_balancing
-
-def _format_addr(s):
-    name, addr = parseaddr(s)
-    return formataddr((Header(name, 'utf-8').encode(), addr))
-
-def timeStr():
-    t = time.strftime(str("%Y-%m-%d %H:%M:%S"), time.localtime())
-    s = '[%s]' % t
-    return s
+from policy.common.utils import  sendEmail, dayStr
 
 def toHTML(data, columns, indexs):
     # 数据只显示当天
-    dis_data = pd.DataFrame(data.iloc[-1, 1:].values.reshape(3, -1), columns=columns, index=indexs)
+    # 调整列顺序
+    cols = ['balance_average_price', 'market_average_price', 'market_median_price', 'balance_average_dblow', 'market_average_dblow', 'market_median_dblow', 'balance_average_premium_rt', 'market_average_premium_rt', 'market_median_premium_rt']
+    display_df = pd.DataFrame(data.iloc[-1, :][cols].values.reshape(-1, 3).T, columns=columns, index=indexs).loc[:, [u'价格', u'溢价率', u'双低值']]
     # 显示百分号
     col = u'溢价率'
-    dis_data[col] = dis_data[col].apply(lambda x: format(x/100, ".2%"))
-    ori_html = dis_data.to_html()
+    display_df[col] = display_df[col].apply(lambda x: format(x, ".2%"))
+    ori_html = display_df.to_html()
 
     #set table style
     ori_html = ori_html.replace("<table", '<table style="border-collapse: collapse;"')
 
     return ori_html
 
-def sendEmail(content, add, title, items, png_path):
-
-    # send email
-    from_addr = 'luoyu091@163.com'
-    password = 'ZIVRTJYTZTGODWUX'
-    to_addr = ['381336925@qq.com', 'moonwalkings@vip.qq.com']
-    smtp_server = 'smtp.163.com'
-    stime = timeStr()  
+def to_email(content, items, png_path):
 
     msg = MIMEMultipart('mixed')
-    msg['From'] = _format_addr('%s <%s>' % (add, from_addr))
-    msg['To'] = ",".join(to_addr) 
-    msg['Subject'] = Header('%s %s' % (title, stime), 'utf-8').encode()
 
     # 表格
     context = MIMEText(content,_subtype='html', _charset='utf-8')
     msg.attach(context)
 
     # 图
-    content = '<p> 当日图表</p>'
+    content = ''
     for item in  items:
         content += '<p> <img src="cid:%s" height="200" width="600"></p>' %item
         # 读图
@@ -66,73 +51,76 @@ def sendEmail(content, add, title, items, png_path):
             img = MIMEImage(f.read())
             img.add_header('Content-ID', item) 
             msg.attach(img)
-
     context = MIMEText(content,_subtype='html', _charset='utf-8')
     msg.attach(context)
-   
-   # 发送部分
-    server = smtplib.SMTP_SSL(smtp_server, 465)
-    # server.set_debuglevel(1)
-    server.ehlo(smtp_server)
-    server.login(from_addr, password)
-    server.sendmail(from_addr, to_addr, msg.as_string())
-    server.quit()
 
-def plot_(df, item, item_ch, save):
-    fig = plt.figure(figsize=(9, 3))
-    x=list(df.index)
+    #发送
+    sendEmail(msg, "可转债日报", "可转债日报")
 
-    plt.plot(x, df['b_mean_%s' %item], 'o-', label='组合均值')
-    plt.plot(x, df['a_mean_%s' %item], 'o-', label='双低均值')
-    plt.plot(x, df['a_median_%s'%item], 'o-', label='双低中位数')
+def plot_(df, values, keys, png_path):
+    x=list(range(df.index.size))
 
-    plt.legend()
-    plt.xticks(x, list(df.date))
-    plt.title(item_ch)
-    if save:
-        plt.savefig(save)
+    for item, item_ch in values.items():
+        fig = plt.figure(figsize=(9, 3))
+        for key, keys_ch in keys.items():
+            plt.plot(x, df['%s_%s' %(key, item)], 'o-', label=keys_ch)
 
-def append_abstract(bound, balance, items):
-    abstract = []
-    for item in items:
-        abstract.append(balance[item].mean())
-    for item in items:
-        abstract.append(bound[item].mean())
-    for item in items:
-        abstract.append(bound[item].median())
-    return abstract 
+        plt.legend()
+        plt.xticks(x, [t.strftime("%Y%m%d") for t in list(df.date)])
+        plt.title(item_ch)
+        if png_path:
+            plt.savefig("%s/%s.png" %(png_path, item))
+
+def get_reports_from_bond(bond, balance, values, keys):
+    reports = {} 
+    for v in values:
+        for key in keys:
+            if key.split('_')[0] == 'market':
+                df = bond 
+            else:
+                df = balance
+            if key.split('_')[1] == 'average':
+                reports["%s_%s" %(key, v)] = df[v].mean()
+            else:
+                reports["%s_%s" %(key, v)] = df[v].median()
+
+    return reports 
 
 
 def main():
-    item_dict= {'price':'价格', 'dblow':'双低值', 'premium_rt':'溢价率'}
-    report_file="/root/workSpace/investProject/ConvertBondWheel/data/daily_report.csv"
+    values_dict= {'price':'价格', 'dblow':'双低值', 'premium_rt':'溢价率'}
+    keys_dict= {'balance_average':'组合均值', 'market_average':'市场均值', 'market_median':'市场中值'}
+    report_file="/root/workSpace/investProject/ConvertBondWheel/data/daily_report.json"
 
     # 读当天可转债数据， 把报表需要的值写到文件里
-    bound = read_data()  #读市场
-    balance_ids = read_balancing()  #读持仓
-    balance = bound[bound['bond_nm'].apply(lambda s: s in list(balance_ids['stock_name']))]
+    bond = read_data()  #读市场
+    balance_names = read_balancing()  #读持仓
+    balance = bond[bond['bond_nm'].apply(lambda s: s in balance_names)]
 
     # 读取当次数据
-    his_df = pd.read_csv(report_file, dtype={'date':str})
-    abstract = append_abstract(bound, balance, list(item_dict.keys()))
-    s = '%s' % time.strftime(str("%Y%m%d"), time.localtime())
-    today_df = pd.DataFrame(abstract.insert(0, s), columns=his_df.columns)
-    # 检查最近一次写入时间， 避免多次重复写入
-    report_df = pd.concat([his_df, today_df]).drop_duplicates(subset=['date'], keep='last')
+    today_reports = get_reports_from_bond(bond, balance, list(values_dict.keys()), list(keys_dict.keys()))
+    today_reports['date'] = dayStr()
+    today_df = pd.read_json(json.dumps([today_reports]))
+
+    # 读历史数据
+    history_df = pd.read_json(report_file)
+    report_df = pd.concat([history_df, today_df]).drop_duplicates(subset=['date'], keep='last')
     report_df = report_df.sort_values('date', ascending=True)
+
     # 保存最新数据
-    report_df.to_csv(report_file, index=False, encoding='utf8',float_format='%.2f')
+    report_df.to_json(report_file, orient="records")
+    print(report_df)
 
     # 报表
-    ori_html = toHTML(report_df, columns=list(item_dict.values()), indexs=['组合均值', '双低均值', '双低中值'])
+    ori_html = toHTML(report_df, columns=list(values_dict.values()), indexs=list(keys_dict.values()))
 
     # 画图
     png_path = '/root/workSpace/investProject/ConvertBondWheel/data'
-    for item, item_ch in item_dict.items():
-        plot_(report_df, item, item_ch, "%s/%s.png" %(png_path, item))
+    # for item, item_ch in values_dict.items():
+    plot_(report_df, values_dict, keys_dict, png_path)
 
     #发邮件
-    sendEmail(ori_html, "可转债日报", '可转债日报', list(item_dict.keys()), png_path)
+    to_email(ori_html, list(values_dict.keys()), png_path)
 
 if __name__ == "__main__":
     main()
