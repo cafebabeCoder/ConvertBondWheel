@@ -46,12 +46,16 @@ class ConvertbondwheelPipeline(object):
             for k in maps:
                 citems.append(maps[k])
             df = pd.DataFrame(citems)
+            # dblow str 2 float
+            df['dblow'] = df['dblow'].astype(float) 
+            df_sort = df.sort_values('dblow')
+            # dblow float 2 str
+            df_sort['dblow'] = df_sort['dblow'].apply(lambda x: format(x, ".2f"))
     
             #获取历史成交量
             # start_date = (datetime.datetime.now() - datetime.timedelta(days=VOL_DATE_AGO)).strftime('%Y%m%d')
             # df['vol_mean'] = df['bond_id'].map(lambda x: self.getVolMean(x, start_date)).round(2)
             # df = df.drop(df[df.vol_mean < MIN_VOL].index)
     
-            df_sort = df.sort_values('dblow')
             df_sort.to_csv(self.output, index=None, encoding='utf8', columns=self.columns, header=self.header)
     

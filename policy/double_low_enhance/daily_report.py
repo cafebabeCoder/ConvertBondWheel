@@ -34,16 +34,17 @@ def toHTML(data, columns, indexs):
 
     return ori_html
 
-def to_email(content, items, png_path):
+def to_email(contents, items, png_path):
 
     msg = MIMEMultipart('mixed')
 
     # 表格
-    context = MIMEText(content,_subtype='html', _charset='utf-8')
-    msg.attach(context)
+    for content in contents:
+        context = MIMEText(content,_subtype='html', _charset='utf-8')
+        msg.attach(context)
 
     # 图
-    content = ''
+    content = '<p> </p>'
     for item in  items:
         content += '<p> <img src="cid:%s" height="200" width="600"></p>' %item
         # 读图
@@ -87,9 +88,35 @@ def get_reports_from_bond(bond, balance, values, keys):
     return reports 
 
 
+def get_market_distribute(bond, balance, market_distribute_index, market_distribute_columns):
+    bonds_size = bond.index.size
+    percents =[float(x.strip('%').replace("市场前", ""))/100 for x in market_distribute_index]
+
+    dblow = []
+    market_count= []
+    banlance_count = []
+    for per in percents:
+        bondary = int(per * bonds_size)
+        bond = bond.sort_values('dblow', ascending=True)
+        tmp_bond = bond[:bondary]#.sort_values('dblow', ascending=True)
+        tmp_bond.reset_index(inplace=True, drop=True)
+        tmp_dblow = tmp_bond.iloc[-1]['dblow']
+        dblow.append(tmp_dblow)
+        market_count.append(tmp_bond.index.size)
+        banlance_count.append(balance[balance['dblow'] < tmp_dblow].index.size)
+    df = pd.DataFrame([dblow, market_count, banlance_count], columns =market_distribute_index, index=market_distribute_columns).T
+    df[[u'市场转债个数', u'组合转债个数']] = df[[u'市场转债个数', u'组合转债个数']].astype(int)
+    ori_html = df.to_html()
+    ori_html = ori_html.replace("<table", '<table style="border-collapse: collapse;"')
+
+    return ori_html 
+    
+
 def main():
     values_dict= {'price':'价格', 'dblow':'双低值', 'premium_rt':'溢价率'}
     keys_dict= {'balance_average':'组合均值', 'market_average':'市场均值', 'market_median':'市场中值'}
+    market_distribute_index = ['市场前5%','市场前10%','市场前15%','市场前20%','市场前50%']
+    market_distribute_columns = [u'双低值', u'市场转债个数', u'组合转债个数']
     report_file="/root/workSpace/investProject/ConvertBondWheel/data/daily_report.json"
 
     # 读当天可转债数据， 把报表需要的值写到文件里
@@ -111,8 +138,11 @@ def main():
     report_df.to_json(report_file, orient="records")
     print(report_df)
 
-    # 报表
-    ori_html = toHTML(report_df, columns=list(values_dict.values()), indexs=list(keys_dict.values()))
+    # 报表 1
+    report1 = toHTML(report_df, columns=list(values_dict.values()), indexs=list(keys_dict.values()))
+    # 报表2 市场分布
+    market_distrubute = get_market_distribute(bond, balance, market_distribute_index, market_distribute_columns)
+    print(market_distrubute)
 
     # 画图
     png_path = '/root/workSpace/investProject/ConvertBondWheel/data'
@@ -120,7 +150,7 @@ def main():
     plot_(report_df, values_dict, keys_dict, png_path)
 
     #发邮件
-    to_email(ori_html, list(values_dict.keys()), png_path)
+    to_email([report1, market_distrubute], list(values_dict.keys()), png_path)
 
 if __name__ == "__main__":
     main()

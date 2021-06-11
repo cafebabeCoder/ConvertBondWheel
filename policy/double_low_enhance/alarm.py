@@ -121,6 +121,8 @@ def read_data(bond_file = '/root/workSpace/investProject/ConvertBondWheel/data/j
         bond[col] = bond[col].map(lambda s: per2float(s))
     # for col in ['volatility_rate']:
         # bond[col] = bond[col]/100
+    bond = bond.sort_values('dblow', ascending=True)
+    bond.reset_index(inplace=True, drop=True)
     return bond
 
 # 读持仓, 返回持仓名字列表
