@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from email.utils import parseaddr, formataddr
 import smtplib
 import time
+import json
 from config import double_low_conf 
 from ConvertBondWheel.fields_config import xueqiu_used_columns, xueqiu_dict, jisilu_dict, jisulu_used_columns
 from policy.common.utils import  sendEmail
@@ -63,9 +64,14 @@ def toHTML(data, ins, outs, balance_line):
     return ori_html
 
 # df中双低值排名topk的可转债价格中位数
-def getTopkDoubleLowPriceMedian(df):
-    per = int(df.index.size*double_low_conf['db_topk'])
+def getTopkDoubleLowPriceMedian(df, topk):
+    per = int(df.index.size*topk)
     return df.sort_values('dblow', ascending=True)[:per]['price'].median()
+    
+# df中双低值排名topk的 双低值
+def getTopkDblow(df, topk):
+    per = int(df.index.size*topk)
+    return df.sort_values('dblow', ascending=True).loc[per, 'dblow']
 
 # df中价格中位数
 def getAllBoundPriceMedian(df):
@@ -85,8 +91,17 @@ def periodTake(row, topkDoubleLowPriceMedian, allBoundPriceMedian, conf):
     row['year_left'] > conf['min_year_left']
 
 # 周期轮出
-def periodOut():
-    pass
+# dblowRankLow = 15%位置的dblow
+# dblowRankHigh = 20%位置dblow
+def periodOut(row, bondsize, dblowRankLowDB, dblowRankHighDB, lastDB):
+    # 转债都在 15%内， 无须轮动
+    if row['dblow'] <= dblowRankLowDB:
+        return False
+    if bondsize > 300:
+        return row['dblow'] > dblowRankHighDB or row['dblow'] >= lastDB 
+    else:
+        return row['dblow'] > dblowRankHighDB 
+
 
 # 脉冲轮入
 def pulseTake(row, topkDoubleLowPriceMedian, allBoundPriceMedian, conf, max_out):
@@ -111,7 +126,7 @@ def per2float(s):
         return -1
 
 # 读市场数据
-def read_data(bond_file = '/root/workSpace/investProject/ConvertBondWheel/data/jisiluConvertBound_pre.csv'):
+def read_data(bond_file = '/root/workSpace/investProject/ConvertBondWheel/data/jisiluConvertBound.csv'):
     bond = pd.read_csv(bond_file)
     # 替换表头为英文
     bond_en2ch_col = dict(zip(jisilu_dict.values(), jisilu_dict.keys()))
@@ -134,12 +149,28 @@ def read_balancing(balancing_file = '/root/workSpace/investProject/ConvertBondWh
     return balance_names 
 
 # 周期 轮动, 返回可转债名字列表
-def periodWheel(bond, double_low_conf):
+def periodWheel(bond, balance_names, double_low_conf):
+    balance_bond = bond[bond['bond_nm'].apply(lambda x : x in balance_names)] # 轮出债必须在持仓
+    balance_bond.reset_index(inplace=True, drop=True)
     # 轮入
-    topkDoubleLowPriceMedian = getTopkDoubleLowPriceMedian(bond)
+    topkDoubleLowPriceMedian = getTopkDoubleLowPriceMedian(bond, double_low_conf['db_topk'])
     allBoundPriceMedian = getAllBoundPriceMedian(bond)
-    filtered_bond = bond[bond.apply(lambda row : periodTake(row, topkDoubleLowPriceMedian, allBoundPriceMedian, double_low_conf), axis=1)]
-    return list(filtered_bond['bond_nm']), []
+    in_bond = bond[bond.apply(lambda row : periodTake(row, topkDoubleLowPriceMedian, allBoundPriceMedian, double_low_conf), axis=1)]
+    if in_bond.empty:
+        in_names = []
+    else:
+        in_names = list(in_bond['bond_nm'])
+
+    dblowRankLowDB = getTopkDblow(bond, 0.15)
+    dblowRankHighDB = getTopkDblow(bond, 0.2)
+    lastDB = balance_bond.sort_values('dblow').iloc[-1 * 2, :]['dblow']
+    logging.info('dblow Low: %f, dblow high: %f, last db:%f' %(dblowRankLowDB, dblowRankHighDB, lastDB))
+    out_bond = balance_bond[balance_bond.apply(lambda row : periodOut(row, bond.index.size, dblowRankLowDB, dblowRankHighDB, lastDB), axis=1)]
+    if out_bond.empty:
+        out_names = []
+    else:
+        out_names = list(out_bond['bond_nm'])
+    return in_names, out_names 
 
 # 脉冲 轮动, 返回 in out可转债名字列表
 def pulseWheel(bond, balance_names, double_low_conf):
@@ -160,36 +191,40 @@ def pulseWheel(bond, balance_names, double_low_conf):
         return [],[] 
 
 # 在持仓中， 显示加*号
-def star_balance(s, balance_names):
-    if s in balance_names: 
+def mark_bond(s, balance_names, in_names, out_names):
+    if s in out_names:
+        return '-'+s
+    elif s in balance_names: 
         return '*'+s
+    elif s in in_names:
+        return '+'+s
     else:
         return s
 
-def unstar_balance(s):
+def unmark_bond(s):
     return s.replace("*", "")
 
 # 仅用于展示 和 保存
 def to_display(bond, balance_names, in_names, out_names, user_zh_columns):
-    # 持仓的股票 加 *
-    bond['bond_nm'] = bond['bond_nm'].apply(lambda s: star_balance(s, balance_names))
-
     # 仅显示持仓+轮入+轮出
     display_rows = balance_names + in_names + out_names
-    bond = bond[bond['bond_nm'].apply(lambda s: unstar_balance(s) in display_rows)]
+    d_bond = bond[bond['bond_nm'].apply(lambda s: s in display_rows)]
+
+    # 持仓的股票 加 *,  轮入+ 轮出-
+    d_bond['bond_nm'] = d_bond['bond_nm'].apply(lambda s: mark_bond(s, balance_names, in_names, out_names))
 
     # 换成中文header
-    header_ch = [jisilu_dict[x] for x in bond.columns] # 中文header
-    bond = bond.rename(columns = jisilu_dict) 
+    header_ch = [jisilu_dict[x] for x in d_bond.columns] # 中文header
+    d_bond = d_bond.rename(columns = jisilu_dict) 
 
     # 显示百分号
     for col in [u'涨跌幅', u'正股涨跌', u'溢价率', u'转债占比', u'到期税前收益', u'到期税后收益', u'波动率', u'换手率']:
-        bond[col] = bond[col].apply(lambda x: format(x, ".2%"))
+        d_bond[col] = d_bond[col].apply(lambda x: format(x, ".2%"))
 
     # 指定优先显示的列&列的顺序
     header = user_zh_columns + [col for col in header_ch if col not in user_zh_columns]  # 添加header的顺序
 
-    return bond.loc[:, header]
+    return d_bond.loc[:, header]
 
 # to_html & save
 def to_alarm(bond, in_names, out_names, balance_line, output=None, send_email=False):
@@ -204,6 +239,18 @@ def to_alarm(bond, in_names, out_names, balance_line, output=None, send_email=Fa
         msg = MIMEText(ori_html, 'html', 'utf-8')
         sendEmail(msg, '可转债脉冲轮动', '可转债脉冲轮动')
 
+# 从配置文件里获取 这次是否发邮件
+def is_send_email(mark_json_file):
+    m = json.load(open(mark_json_file))
+    return m['first_alarm_mark']
+
+# 重置标志
+def reset_mark(mark_json_file, k, v):
+    m = json.load(open(mark_json_file))
+    m[k] == v 
+    with open(mark_json_file, 'w', encoding='utf8') as w:
+        w.write(json.dumps(m))
+
 def main(argv):
     logging.info("[%s start!]" %" ".join(argv)) 
     policy = argv[1]  # policy = ['period', 'pulse']
@@ -213,19 +260,25 @@ def main(argv):
     balance_names = read_balancing()  #读持仓
     logging.debug("Read current banlance: %s\n" %','.join(balance_names))
     if policy == 'period':
-        in_names, out_names = periodWheel(bond, double_low_conf)
+        in_names, out_names = periodWheel(bond, balance_names, double_low_conf)
         result = to_display(bond, balance_names, in_names, out_names, user_zh_columns=double_low_conf['user_zh_columns'])
         logging.debug(result)
     elif policy == 'pulse':
         pulse_path = '/root/workSpace/investProject/ConvertBondWheel/data/pulse_alarm.html'
+        mark_json_file = '/root/workSpace/investProject/ConvertBondWheel/data/mark.json'
         in_names, out_names = pulseWheel(bond, balance_names, double_low_conf)
         logging.debug("Bond Wheel: in=%d\tout=%d\nin:%s\nout:%s" %(len(in_names), len(out_names), ', '.join(in_names), ', '.join(out_names)))
         if len(out_names) > 0:
             result = to_display(bond, balance_names, in_names, out_names, user_zh_columns=double_low_conf['user_zh_columns'])
             logging.debug("Display:")
             balance_line = balance_manege(bond.index.size)
-            to_alarm(result, in_names, out_names, balance_line, output=pulse_path, send_email=True)
+            if is_send_email():
+                to_alarm(result, in_names, out_names, balance_line, output=pulse_path, send_email=True)
+                reset_mark(mark_json_file, 'first_alarm_mark', False)
             logging.debug(result)
+        else:
+            reset_mark(mark_json_file, 'first_alarm_mark', True)
+
     else:
         logging.error("Parameter policy error!!")
 

@@ -63,18 +63,19 @@ class JisiluSpider(scrapy.Spider):
         for row in rows:
             citem = ConvertbondwheelItem()
             cellItem = row['cell']
+            # logging.info(cellItem)
             for column in jisulu_used_columns:
                 # 双低值计算, 已经用集思录代替
                 # if column == 'value_score':
                 #    citem['value_score'] = float(citem['price']) + float(citem['preminum_rt'].split('%')[0])
-                if column == 'convert_dt':
-                    # 加入转股日期, 不要用scrapy了， 每次写都不对 
-                    conver_dt_link = "https://www.jisilu.cn/data/cbnew/detail_pic/?display=premium_rt&bond_id=" + citem['bond_id']
-                    html = self.sess.get(conver_dt_link, headers=self.HEADER).text
-                    citem['convert_dt'] = json.loads(html)['convert_dt']
+                # 早期的转股日需要从别处拿， 现在是会员了，直接可以获得，减少爬取次数
+                # if column == 'convert_dt':
+                #     # 加入转股日期, 不要用scrapy了， 每次写都不对 
+                #     conver_dt_link = "https://www.jisilu.cn/data/cbnew/detail_pic/?display=premium_rt&bond_id=" + citem['bond_id']
+                #     html = self.sess.get(conver_dt_link, headers=self.HEADER).text
+                #     citem['convert_dt'] = json.loads(html)['convert_dt']
 
-                else:
-                    citem[column] = cellItem[column]
+                citem[column] = cellItem[column]
 
             if 'EB' in citem['bond_nm'] or citem['volume'] == '0.00':
                 continue

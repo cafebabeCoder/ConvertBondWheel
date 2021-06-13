@@ -71,7 +71,7 @@ class XueqiuSpider(scrapy.Spider):
         for line in resp.split("\n"):
             if 'SNB.cubeInfo' in line:
                 result = line.replace("SNB.cubeInfo = ", '').strip(';')
-                logging.info(result)
+                logging.debug(result)
         if len(result) < 10:
             logging.error(" Empty!")
             return

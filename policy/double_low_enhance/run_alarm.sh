@@ -5,10 +5,11 @@ cur_date=$(date '+%Y-%m-%d %H:%M:%S')
 echo "---------$cur_date------"
 
 # 爬虫爬集思录
-echo "---------scrapy---------"
-cd /root/workSpace/investProject/ConvertBondWheel/ConvertBondWheel/spiders
-scrapy crawl jisilu  
-scrapy crawl xueqiu 
+# echo "---------scrapy---------"
+# cd /root/workSpace/investProject/ConvertBondWheel/ConvertBondWheel/spiders
+# scrapy crawl jisilu  
+# scrapy crawl xueqiu 
+sh /root/workSpace/investProject/ConvertBondWheel/policy/double_low_enhance/run_spider.sh
 
 # 运行监控程序
 echo "--------alarm-----------"
@@ -16,6 +17,6 @@ echo "--------alarm-----------"
 
 # 替换当前文件为历史文件
 echo "-----replace file-------"
-mv /root/workSpace/investProject/ConvertBondWheel/data/jisiluConvertBound.csv /root/workSpace/investProject/ConvertBondWheel/data/jisiluConvertBound_pre.csv
+cp /root/workSpace/investProject/ConvertBondWheel/data/jisiluConvertBound.csv /root/workSpace/investProject/ConvertBondWheel/data/jisiluConvertBound_pre.csv
 
 echo -e " "
