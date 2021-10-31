@@ -46,7 +46,7 @@ def to_email(contents, items, png_path):
     # 图
     content = '<p> </p>'
     for item in  items:
-        content += '<p> <img src="cid:%s" height="200" width="600"></p>' %item
+        content += '<p> <img src="cid:%s" height="300" width="800"></p>' %item
         # 读图
         with open("%s/%s.png" %(png_path, item), "rb") as f:
             img = MIMEImage(f.read())
@@ -62,12 +62,12 @@ def plot_(df, values, keys, png_path):
     x=list(range(df.index.size))
 
     for item, item_ch in values.items():
-        fig = plt.figure(figsize=(9, 3))
+        fig = plt.figure(figsize=(12, 5))
         for key, keys_ch in keys.items():
             plt.plot(x, df['%s_%s' %(key, item)], 'o-', label=keys_ch)
 
-        plt.legend()
-        plt.xticks(x, [t.strftime("%Y%m%d") for t in list(df.date)])
+        plt.legend(loc="upper left", bbox_to_anchor=(0, 0.85))
+        plt.xticks(x, [t.strftime("%Y%m%d") for t in list(df.date)], rotation=35)
         plt.title(item_ch)
         if png_path:
             plt.savefig("%s/%s.png" %(png_path, item))

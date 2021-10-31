@@ -119,8 +119,10 @@ def pulseOut(row, allBoundPriceMedian, conf):
             row['dblow'] > conf['pulse_out_dblow'][1]
 
 def per2float(s):
+    if type(s) == float:
+        return s/100
     s = s.strip('%')
-    if s!='-':
+    if s!='-' and s!='buy':
         return float(s) / 100 
     else:
         return -1
@@ -132,10 +134,10 @@ def read_data(bond_file = '/root/workSpace/investProject/ConvertBondWheel/data/j
     bond_en2ch_col = dict(zip(jisilu_dict.values(), jisilu_dict.keys()))
     bond = bond.rename(columns=bond_en2ch_col) 
     # 处理百分号
-    for col in ['increase_rt', 'sincrease_rt', 'premium_rt', 'convert_amt_ratio', 'ytm_rt', 'ytm_rt_tax']:
+    for col in ['increase_rt', 'sincrease_rt', 'premium_rt', 'convert_amt_ratio', 'ytm_rt', 'ytm_rt_tax', 'volatility_rate']:
         bond[col] = bond[col].map(lambda s: per2float(s))
     # for col in ['volatility_rate']:
-        # bond[col] = bond[col]/100
+        # bond[col] = float(bond[col])/100
     bond = bond.sort_values('dblow', ascending=True)
     bond.reset_index(inplace=True, drop=True)
     return bond
@@ -180,7 +182,7 @@ def pulseWheel(bond, balance_names, double_low_conf):
     # 如果有满足条件的轮出， 检查轮入是否满足条件
     if out_bond.index.size > 0 :
         # 获取轮入标的
-        topkDoubleLowPriceMedian = getTopkDoubleLowPriceMedian(bond)
+        topkDoubleLowPriceMedian = getTopkDoubleLowPriceMedian(bond, double_low_conf['db_topk'])
         max_out = out_bond['dblow'].max() # 轮出的可转债双低值
         in_bond = bond[bond.apply(lambda row : pulseTake(row, topkDoubleLowPriceMedian, allBoundPriceMedian, double_low_conf, max_out), axis=1)]
         if in_bond.empty:
@@ -247,8 +249,10 @@ def is_send_email(mark_json_file):
 # 重置标志
 def reset_mark(mark_json_file, k, v):
     m = json.load(open(mark_json_file))
-    m[k] == v 
+    m[k] = v 
+    logging.info(m)
     with open(mark_json_file, 'w', encoding='utf8') as w:
+        logging.info(m)
         w.write(json.dumps(m))
 
 def main(argv):
@@ -272,7 +276,9 @@ def main(argv):
             result = to_display(bond, balance_names, in_names, out_names, user_zh_columns=double_low_conf['user_zh_columns'])
             logging.debug("Display:")
             balance_line = balance_manege(bond.index.size)
-            if is_send_email():
+            logging.info('is_send_email\n')
+            logging.info(is_send_email(mark_json_file))
+            if is_send_email(mark_json_file):
                 to_alarm(result, in_names, out_names, balance_line, output=pulse_path, send_email=True)
                 reset_mark(mark_json_file, 'first_alarm_mark', False)
             logging.debug(result)
